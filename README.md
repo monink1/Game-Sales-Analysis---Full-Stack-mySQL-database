@@ -1,6 +1,11 @@
 A full-stack data visualization application focused on game sales data, built for graduate course assignment. The app supports multi-dimensional data analysis and visualization, demonstrating efficient database modeling and standard software engineering practices.
+
+用了anaconda创建的虚拟环境，前端后端的都在requirements.txt,然后dorcker desktop下载nodejs，python用flask框架，mysql导入的是https://www.kaggle.com/datasets/gregorut/videogamesales?resource=download的数据集，之后稍微后处理了五个接口，本地可以显示其效果。勉勉强强算全栈数据库吧。
+
+
 📋 Project Overview
 This project is a full-stack application centered around game sales data (from global game market datasets). It solves the problem of "multi-dimensional game sales analysis" for game publishers, investors, and market researchers by providing intuitive data visualization and query capabilities.
+
 Core value:
 Analyze top-selling games and market share of platforms/regions
 Identify core products of leading publishers
