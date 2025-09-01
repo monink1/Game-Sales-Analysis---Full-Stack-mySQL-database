@@ -4,6 +4,65 @@ A full-stack data visualization application focused on game sales data, built fo
 https://www.kaggle.com/datasets/gregorut/videogamesales?resource=download
 的数据集，之后稍微后处理了五个接口，本地可以显示其效果。勉勉强强算全栈数据库吧。
 
+1.下载mysql,anaconda,docker desktop.
+
+2.安装anaconda虚拟环境依赖（requirements.txt）
+
+3.下载node.js
+https://nodejs.org/zh-cn/download/archive/v20.19.4
+解压后路径添加到环境变量
+
+4.vue3创建
+
+npm create vue@latest db-app-frontend
+
+cd db-app-frontend
+
+npm install element-plus @element-plus/icons-vue
+
+npm run dev
+
+5.dorker desktop 
+
+setting -> docker engine 改成
+
+{
+  "experimental": false,
+  "features": {
+    "buildkit": true
+  },
+  "registry-mirrors": [
+    "https://hub-mirror.c.163.com",
+    "https://mirror.ccs.tencentyun.com"
+  ]
+}
+
+6.docker-compose.yml是关键
+
+7.连接mysql端口什么的确认完整，我是3307。导入操作保证句句正确
+这里注意CSV要再次保存确认是UTF-8格式
+8.
+# 进入 docker-test 目录
+cd E:\node\docker-test
+
+# 重新构建并启动所有服务（--build 确保用最新配置）
+docker compose up -d --build
+
+# 再次查看服务状态，确认 backend-test 出现
+docker compose ps
+
+
+(data) E:\node\docker-test>docker compose ps
+NAME            IMAGE                       COMMAND                   SERVICE         CREATED          STATUS                   PORTS
+flask-backend   docker-test-backend-test    "python app.py"           backend-test    14 minutes ago   Up 5 minutes             0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+mysql-db        mysql:8.0                   "docker-entrypoint.s…"   mysql-test      27 minutes ago   Up 5 minutes (healthy)   0.0.0.0:3307->3306/tcp, [::]:3307->3306/tcp
+vue-frontend    docker-test-frontend-test   "/docker-entrypoint.…"   frontend-test   14 minutes ago   Up 5 minutes             0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
+
+三个都存在则说明互相已经连接上
+
+
+
+再次开启：
 开启docker desktop,anaconda激活环境
 
 docker compose up -d --build
