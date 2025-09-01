@@ -1,0 +1,5 @@
+flask==2.3.3          # 后端Web框架
+flask-sqlalchemy==3.1.1 # 连接MySQL的ORM工具
+pymysql==1.1.0        # MySQL驱动
+flask-cors==4.0.0     # 解决前端跨域问题（必须有）
+pandas==2.1.4        # 数据处理（可选，但之前导入脚本用了）
