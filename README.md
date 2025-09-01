@@ -1,6 +1,16 @@
 A full-stack data visualization application focused on game sales data, built for graduate course assignment. The app supports multi-dimensional data analysis and visualization, demonstrating efficient database modeling and standard software engineering practices.
 
-用了anaconda创建的虚拟环境，前端后端的都在requirements.txt,然后dorcker desktop下载nodejs，python用flask框架，mysql导入的是https://www.kaggle.com/datasets/gregorut/videogamesales?resource=download的数据集，之后稍微后处理了五个接口，本地可以显示其效果。勉勉强强算全栈数据库吧。
+用了anaconda创建的虚拟环境，前端后端的都在requirements.txt,然后dorcker desktop下载nodejs，python用flask框架，mysql导入的是
+https://www.kaggle.com/datasets/gregorut/videogamesales?resource=download
+的数据集，之后稍微后处理了五个接口，本地可以显示其效果。勉勉强强算全栈数据库吧。
+
+开启docker desktop,anaconda激活环境
+
+docker compose up -d --build
+
+然后查看
+http://localhost:8080/
+即可
 
 
 📋 Project Overview
