@@ -1,5 +1,11 @@
-flask==2.3.3          # 后端Web框架
-flask-sqlalchemy==3.1.1 # 连接MySQL的ORM工具
-pymysql==1.1.0        # MySQL驱动
-flask-cors==4.0.0     # 解决前端跨域问题（必须有）
-pandas==2.1.4        # 数据处理（可选，但之前导入脚本用了）
+# 核心框架依赖
+flask==2.3.3                    # Flask 主框架（与你的版本一致）
+flask-cors==4.0.0               # 跨域支持（与你的版本一致）
+
+# 数据库连接依赖（匹配 app.py 中的 import mysql.connector）
+mysql-connector-python==8.0.33  # 必须保留，否则会报 ModuleNotFoundError
+
+# 其他依赖（保留你提供的版本，确保兼容性）
+cryptography==41.0.7            # 加密相关库
+flask-sqlalchemy==3.1.1         # SQLAlchemy 扩展（若代码中未使用可保留或删除）
+sqlalchemy==2.0.23              # SQLAlchemy 核心库（若代码中未使用可保留或删除）
