@@ -1,372 +1,395 @@
 <template>
-  <div class="analysis-container">
-    <!-- 页面标题 -->
-    <h1 class="page-title">游戏销量数据分析</h1>
+  <div class="container">
+    <h1>游戏销量数据分析平台</h1>
 
-    <!-- 1. 全球销量Top10表格 -->
-    <div class="data-card">
-      <h2 class="card-title">全球销量Top10游戏</h2>
-      <div class="table-wrapper">
-        <table class="sales-table">
-          <thead>
-            <tr>
-              <th>排名</th>
-              <th>游戏名称</th>
-              <th>平台</th>
-              <th>全球销量（百万）</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="game in topGames" :key="game.Rank">
-              <td class="rank-cell">{{ game.Rank }}</td>
-              <td class="name-cell">{{ game.Name }}</td>
-              <td class="platform-cell">{{ game.Platform }}</td>
-              <td class="sales-cell">{{ game.Global_Sales.toFixed(2) }}</td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- 1. 各地区Top20游戏组合图 -->
+    <div class="chart-card">
+      <h2>各地区最畅销20款游戏（折线+柱状组合图）</h2>
+      <div ref="regionTop20Chart" class="chart-wrapper"></div>
+    </div>
+
+    <!-- 2. 各类型最畅销游戏柱状图 -->
+    <div class="chart-card">
+      <h2>各游戏类型最畅销游戏销量（从小到大排序）</h2>
+      <div ref="genreTopChart" class="chart-wrapper"></div>
+    </div>
+
+    <!-- 3. 三条件筛选器及结果展示（已删除封面图列） -->
+    <div class="filter-section">
+      <h2>游戏筛选器（Genre + Platform + Publisher）</h2>
+      <div class="filter-controls">
+        <div class="filter-item">
+          <label>选择类型：</label>
+          <select v-model="selectedGenre" @change="handleFilterChange">
+            <option value="">-- 请选择 --</option>
+            <option v-for="genre in allGenres" :key="genre">{{ genre }}</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>选择平台：</label>
+          <select v-model="selectedPlatform" @change="handleFilterChange">
+            <option value="">-- 请选择 --</option>
+            <option v-for="platform in allPlatforms" :key="platform">{{ platform }}</option>
+          </select>
+        </div>
+        <div class="filter-item">
+          <label>选择发行商：</label>
+          <select v-model="selectedPublisher" @change="handleFilterChange">
+            <option value="">-- 请选择 --</option>
+            <option v-for="publisher in allPublishers" :key="publisher">{{ publisher }}</option>
+          </select>
+        </div>
+        <button 
+          class="query-btn" 
+          @click="fetchFilteredGames" 
+          :disabled="!isFilterComplete"
+        >
+          查询符合条件的游戏
+        </button>
       </div>
-    </div>
 
-    <!-- 2. 平台销量柱状图 -->
-    <div class="data-card">
-      <h2 class="card-title">各平台总销量分布</h2>
-      <div ref="platformChart" class="chart-container"></div>
-    </div>
-
-    <!-- 3. 地区销量饼图 -->
-    <div class="data-card">
-      <h2 class="card-title">各地区销量占比</h2>
-      <div ref="regionChart" class="chart-container"></div>
-    </div>
-
-    <!-- 4. PC端游戏销量Top20 -->
-    <div class="data-card">
-      <h2 class="card-title">PC端游戏销量Top20</h2>
-      <div class="table-wrapper">
-        <table class="sales-table">
+      <!-- 筛选结果表格（无封面图列） -->
+      <div v-if="filteredGames.length > 0" class="result-table">
+        <h3>筛选结果（共 {{ filteredGames.length }} 款）</h3>
+        <table>
           <thead>
             <tr>
               <th>排名</th>
               <th>游戏名称</th>
+              <th>类型</th>
+              <th>平台</th>
               <th>发行商</th>
               <th>全球销量（百万）</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(game, index) in pcTop20" :key="index">
-              <td class="rank-cell">{{ index + 1 }}</td>
-              <td class="name-cell">{{ game.Name }}</td>
-              <td class="publisher-cell">{{ game.Publisher }}</td>
-              <td class="sales-cell">{{ game.Global_Sales.toFixed(2) }}</td>
+            <tr v-for="(game, index) in filteredGames" :key="index + game.name">
+              <td>{{ index + 1 }}</td>
+              <td>{{ game.name || game.Name || '未知游戏' }}</td>
+              <td>{{ game.genre || game.Genre || '未知类型' }}</td>
+              <td>{{ game.platform || game.Platform || '未知平台' }}</td>
+              <td>{{ game.publisher || game.Publisher || '未知发行商' }}</td>
+              <td>{{ (Number(game.global_sales || game.Global_Sales) || 0).toFixed(2) }}</td>
             </tr>
           </tbody>
         </table>
       </div>
-    </div>
-
-    <!-- 5. 前十发行商的Top3游戏饼图 -->
-    <div class="data-card">
-      <h2 class="card-title">前十畅销发行商的Top3游戏销量占比</h2>
-      <div class="publishers-grid">
-        <!-- 使用函数式ref将容器存入数组 -->
-        <div v-for="(publisher, index) in top10Publishers" :key="publisher.publisher" class="publisher-item">
-          <h3 class="publisher-title">{{ index + 1 }}. {{ publisher.publisher }}</h3>
-          <!-- 函数式ref：直接将当前元素存入数组的对应索引 -->
-          <div :ref="(el) => publisherChartRefs[index] = el" class="small-chart-container"></div>
-        </div>
+      <div v-else-if="isFilterComplete && filteredGames.length === 0" class="no-result">
+        没有找到符合条件的游戏，请重新选择筛选条件
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, computed } from 'vue';
+import { ref, onMounted, nextTick } from 'vue';
 import axios from 'axios';
 import * as echarts from 'echarts';
 
-// 响应式数据存储
-const topGames = ref([]);
-const platformData = ref({ platforms: [], total_sales: [] });
-const regionData = ref([]);
-const pcTop20 = ref([]);
-const topPublishers = ref([]);
+// 图表容器
+const regionTop20Chart = ref(null);
+const genreTopChart = ref(null);
 
-// 计算属性：取前10个发行商
-const top10Publishers = computed(() => topPublishers.value.slice(0, 10));
+// 数据存储
+const regionGames = ref([]);
+const genreGames = ref([]);
+const allGenres = ref([]);
+const allPlatforms = ref([]);
+const allPublishers = ref([]);
+const selectedGenre = ref('');
+const selectedPlatform = ref('');
+const selectedPublisher = ref('');
+const filteredGames = ref([]);
 
-// 图表容器引用
-const platformChart = ref(null);
-const regionChart = ref(null);
-// 用数组存储容器（索引对应发行商顺序）
-const publisherChartRefs = ref([]); 
+// 筛选条件是否完整
+const isFilterComplete = () => {
+  return !!selectedGenre.value && !!selectedPlatform.value && !!selectedPublisher.value;
+};
 
-// 页面加载时获取数据并初始化图表
-onMounted(async () => {
+// 初始化所有数据
+const initAllData = async () => {
   try {
-    // 并行请求接口
-    const [topRes, platformRes, regionRes, pcRes, publisherRes] = await Promise.all([
-      axios.get('http://localhost:5000/api/sales/top?n=10'),
-      axios.get('http://localhost:5000/api/sales/by-platform'),
-      axios.get('http://localhost:5000/api/sales/by-region'),
-      axios.get('http://localhost:5000/api/sales/pc-top20'),
-      axios.get('http://localhost:5000/api/sales/top-publishers') // 获取全部发行商数据
+    const [regionRes, genreRes, filterRes] = await Promise.all([
+      axios.get('http://localhost:5000/api/sales/by-region-top20?n=20'),
+      axios.get('http://localhost:5000/api/sales/by-genre-top'),
+      axios.get('http://localhost:5000/api/filters/meta')
     ]);
 
-    // 存储数据
-    topGames.value = topRes.data.data;
-    platformData.value = platformRes.data.data;
-    regionData.value = regionRes.data.data;
-    pcTop20.value = pcRes.data.data || [];
-    topPublishers.value = publisherRes.data.data || [];
+    regionGames.value = (regionRes.data.data || []).map(game => ({
+      name: game.name || game.Name || '未知游戏',
+      publisher: game.publisher || game.Publisher || '未知发行商',
+      platform: game.platform || game.Platform || '未知平台',
+      year: game.year || game.Year || '未知年份',
+      na_sales: Number(game.na_sales || game.NA_Sales) || 0,
+      eu_sales: Number(game.eu_sales || game.EU_Sales) || 0,
+      jp_sales: Number(game.jp_sales || game.JP_Sales) || 0,
+      other_sales: Number(game.other_sales || game.Other_Sales) || 0,
+      global_sales: Number(game.global_sales || game.Global_Sales) || 0
+    }));
 
-    // 等待DOM渲染完成
-    await nextTick();
-    
-    // 初始化图表
-    initPlatformChart();
-    initRegionChart();
-    initPublisherCharts();
+    genreGames.value = (genreRes.data.data || []).map(item => ({
+      genre: item.genre || item.Genre || '未知类型',
+      game_name: item.game_name || item.top_game_name || item.Name || '未知游戏',
+      sales: Number(item.sales || item.Global_Sales) || 0
+    }));
 
-  } catch (error) {
-    console.error('数据加载失败:', error);
-    alert('数据加载失败，请检查后端服务是否正常');
+    allGenres.value = filterRes.data.genres || [];
+    allPlatforms.value = filterRes.data.platforms || [];
+    allPublishers.value = filterRes.data.publishers || [];
+  } catch (err) {
+    console.error('数据初始化失败：', err);
+    alert('数据加载失败，请检查后端服务');
   }
-});
+};
 
-// 初始化平台销量柱状图
-const initPlatformChart = () => {
-  if (!platformChart.value || platformData.value.platforms.length === 0) {
-    console.warn('平台图表容器不存在或数据为空');
-    return;
+// 查询筛选结果
+const fetchFilteredGames = async () => {
+  if (!isFilterComplete()) return;
+  try {
+    const res = await axios.get('http://localhost:5000/api/games/filtered', {
+      params: { genre: selectedGenre.value, platform: selectedPlatform.value, publisher: selectedPublisher.value }
+    });
+    filteredGames.value = (res.data.data || []).map(game => ({
+      name: game.name || game.Name || '未知游戏',
+      genre: game.genre || game.Genre || '未知类型',
+      platform: game.platform || game.Platform || '未知平台',
+      publisher: game.publisher || game.Publisher || '未知发行商',
+      global_sales: game.global_sales || game.Global_Sales || 0
+    }));
+  } catch (err) {
+    console.error('筛选查询失败：', err);
+    alert('查询失败，请重试');
   }
+};
 
-  const chart = echarts.init(platformChart.value);
+// 筛选条件变化时清空结果
+const handleFilterChange = () => {
+  filteredGames.value = [];
+};
+
+// 初始化地区Top20图表
+const initRegionChart = () => {
+  if (!regionTop20Chart.value || regionGames.value.length === 0) return;
+  const chart = echarts.init(regionTop20Chart.value);
+  const regionConfig = [
+    { key: 'na_sales', name: '北美', color: '#409eff' },
+    { key: 'eu_sales', name: '欧洲', color: '#67c23a' },
+    { key: 'jp_sales', name: '日本', color: '#f56c6c' },
+    { key: 'other_sales', name: '其他地区', color: '#909399' }
+  ];
+
+  const series = [];
+  regionConfig.forEach(region => {
+    const sortedGames = [...regionGames.value]
+      .sort((a, b) => b[region.key] - a[region.key])
+      .slice(0, 20);
+
+    series.push({
+      name: `${region.name}销量`,
+      type: 'bar',
+      data: sortedGames.map(game => ({
+        value: game[region.key],
+        gameInfo: { name: game.name, platform: game.platform, publisher: game.publisher, year: game.year, sales: game[region.key] }
+      })),
+      itemStyle: { color: region.color },
+      barWidth: '30%'
+    });
+
+    series.push({
+      name: `${region.name}趋势`,
+      type: 'line',
+      data: sortedGames.map(game => game[region.key]),
+      symbol: 'circle',
+      lineStyle: { color: region.color },
+      itemStyle: { color: region.color }
+    });
+  });
+
   chart.setOption({
     tooltip: {
       trigger: 'axis',
       axisPointer: { type: 'shadow' },
-      formatter: '{b}: {c} 百万'
-    },
-    grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
-    xAxis: {
-      type: 'category',
-      data: platformData.value.platforms,
-      axisLabel: { rotate: 45, interval: 0, fontSize: 12 }
-    },
-    yAxis: { type: 'value', name: '总销量（百万）' },
-    series: [{
-      name: '销量',
-      type: 'bar',
-      data: platformData.value.total_sales,
-      itemStyle: {
-        color: (params) => params.dataIndex < 3 
-          ? ['#f56c6c', '#e6a23c', '#409eff'][params.dataIndex] 
-          : '#67c23a'
+      formatter: (params) => {
+        const barParam = params.find(p => p.seriesType === 'bar');
+        const gameInfo = barParam?.data?.gameInfo || {};
+        const sales = Number(gameInfo.sales) || 0;
+        return `
+          <div style="display:flex;gap:10px;padding:8px;">
+            <div>
+              <div style="font-weight:bold;">${gameInfo.name || '未知游戏'}</div>
+              <div>发行商：${gameInfo.publisher || '未知'}</div>
+              <div>平台：${gameInfo.platform || '未知'}</div>
+              <div>年份：${gameInfo.year || '未知'}</div>
+              <div style="color:#409eff;">销量：${sales.toFixed(2)} 百万</div>
+            </div>
+          </div>
+        `;
       },
-      label: { show: true, position: 'top', fontSize: 10 }
-    }]
+      confine: true
+    },
+    legend: { data: regionConfig.map(r => r.name), bottom: 0, left: 'center' },
+    grid: { left: '5%', right: '5%', bottom: '15%', top: '10%', containLabel: true },
+    xAxis: { type: 'category', data: Array.from({ length: 20 }, (_, i) => `Top${i+1}`) },
+    yAxis: { type: 'value', name: '销量（百万）', min: 0 },
+    series: series
   });
 
   window.addEventListener('resize', () => chart.resize());
 };
 
-// 初始化地区销量饼图
-const initRegionChart = () => {
-  if (!regionChart.value || regionData.value.length === 0) {
-    console.warn('地区图表容器不存在或数据为空');
-    return;
-  }
+// 初始化类型畅销榜图表
+const initGenreChart = () => {
+  if (!genreTopChart.value || genreGames.value.length === 0) return;
+  const chart = echarts.init(genreTopChart.value);
+  const sortedData = [...genreGames.value].sort((a, b) => a.sales - b.sales);
 
-  const chart = echarts.init(regionChart.value);
   chart.setOption({
-    tooltip: { trigger: 'item', formatter: '{a} <br/>{b}: {c} 百万 ({d}%)' },
-    legend: { orient: 'horizontal', bottom: 0, itemWidth: 12, itemHeight: 12 },
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params) => {
+        const data = params[0].data || {};
+        return `
+          <div>类型：${data.genre || '未知'}</div>
+          <div>游戏：${data.game_name || '未知'}</div>
+          <div>销量：${Number(data.sales || 0).toFixed(2)} 百万</div>
+        `;
+      }
+    },
+    grid: { left: '12%', right: '8%', bottom: '10%', top: '10%' },
+    xAxis: { type: 'value', name: '销量（百万）' },
+    yAxis: { type: 'category', data: sortedData.map(item => item.genre) },
     series: [{
-      name: '地区销量',
-      type: 'pie',
-      radius: ['40%', '70%'],
-      center: ['50%', '40%'],
-      itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 2 },
-      data: regionData.value.map(item => ({ name: item.region, value: item.sales }))
+      type: 'bar',
+      data: sortedData.map(item => ({ value: item.sales, genre: item.genre, game_name: item.game_name })),
+      itemStyle: { color: '#67c23a' },
+      label: { show: true, position: 'right' }
     }]
   });
 
   window.addEventListener('resize', () => chart.resize());
 };
 
-// 初始化发行商Top3游戏饼图
-const initPublisherCharts = () => {
-  // 打印容器数组，方便调试
-  console.log('发行商图表容器数组:', publisherChartRefs.value);
-
-  // 遍历前10个发行商
-  top10Publishers.value.forEach((publisher, index) => {
-    // 从数组中按索引获取容器
-    const chartContainer = publisherChartRefs.value[index];
-    
-    // 检查容器是否存在
-    if (!chartContainer) {
-      console.warn(`发行商${index}图表容器不存在，当前索引对应的容器为:`, chartContainer);
-      return;
-    }
-
-    // 检查游戏数据
-    if (!publisher.top_games || publisher.top_games.length === 0) {
-      console.warn(`发行商${index}（${publisher.publisher}）没有游戏数据`);
-      return;
-    }
-
-    // 初始化图表
-    const chart = echarts.init(chartContainer);
-    chart.setOption({
-      tooltip: { trigger: 'item', formatter: '{b}: {c} 百万 ({d}%)' },
-      legend: { orient: 'vertical', top: 'middle', right: 10, fontSize: 11 },
-      series: [{
-        name: '游戏销量',
-        type: 'pie',
-        radius: ['45%', '75%'],
-        center: ['35%', '50%'],
-        itemStyle: { borderRadius: 3, borderColor: '#fff', borderWidth: 1 },
-        label: { show: true, fontSize: 11, formatter: '{b}: {d}%' },
-        data: publisher.top_games.map(game => ({ name: game.name, value: game.sales }))
-      }]
-    });
-
-    window.addEventListener('resize', () => chart.resize());
-  });
-};
+// 页面加载初始化
+onMounted(async () => {
+  await initAllData();
+  await nextTick();
+  setTimeout(() => {
+    initRegionChart();
+    initGenreChart();
+  }, 500);
+});
 </script>
 
 <style scoped>
-/* 样式保持不变，网格布局会自动适应10个项目 */
-.analysis-container {
+.container {
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Segoe UI', sans-serif;
 }
 
-.page-title {
+h1 {
   text-align: center;
   color: #333;
-  margin-bottom: 30px;
-  font-weight: 600;
+  margin: 20px 0 40px;
 }
 
-.data-card {
+.chart-card {
   background: #fff;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
   padding: 20px;
   margin-bottom: 30px;
 }
 
-.card-title {
-  color: #444;
-  font-size: 18px;
-  margin-top: 0;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #f0f0f0;
+.chart-wrapper {
+  width: 100%;
+  height: 500px;
+  margin-top: 15px;
 }
 
-.table-wrapper {
+.filter-section {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  padding: 20px;
+}
+
+.filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin: 20px 0;
+  align-items: center;
+}
+
+.filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+select {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  min-width: 180px;
+}
+
+.query-btn {
+  padding: 8px 20px;
+  background: #409eff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.query-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.result-table {
+  margin-top: 20px;
   overflow-x: auto;
 }
 
-.sales-table {
+table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 600px;
-}
-
-.sales-table th,
-.sales-table td {
-  padding: 12px 15px;
-  text-align: left;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.sales-table th {
-  background-color: #f5f7fa;
-  font-weight: 600;
-  color: #666;
-}
-
-.sales-table tr:hover {
-  background-color: #f9f9f9;
-}
-
-.rank-cell {
-  color: #f56c6c;
-  font-weight: 600;
-}
-
-.name-cell {
-  max-width: 250px;
-}
-
-.platform-cell {
-  color: #1890ff;
-}
-
-.sales-cell {
-  font-weight: 600;
-}
-
-.chart-container {
-  width: 100%;
-  height: 450px;
-}
-
-.publisher-cell {
-  color: #722ed1;
-}
-
-.publishers-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
   margin-top: 10px;
 }
 
-.publisher-item {
-  background: #f9f9f9;
-  border-radius: 6px;
-  padding: 15px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+th, td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
 }
 
-.publisher-title {
-  font-size: 14px;
-  color: #333;
-  margin: 0 0 15px 0;
-  padding-bottom: 5px;
-  border-bottom: 1px dashed #eee;
+th {
+  background: #f5f7fa;
+  font-weight: 600;
 }
 
-.small-chart-container {
-  width: 100%;
-  height: 220px;
+.no-result {
+  margin: 20px 0;
+  color: #666;
+  padding: 10px;
+  text-align: center;
 }
 
 @media (max-width: 768px) {
-  .chart-container {
-    height: 300px;
+  .filter-controls {
+    flex-direction: column;
+    align-items: stretch;
   }
-
-  .small-chart-container {
-    height: 200px;
+  .query-btn {
+    margin-left: 0;
   }
-
-  .publishers-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .data-card {
-    padding: 15px;
+  .chart-wrapper {
+    height: 350px;
   }
 }
 </style>
-    
